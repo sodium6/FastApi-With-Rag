@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Thai Shop RAG Assistant</title>
+  <style>
+    /* Basic styling, you can move this to static/style.css */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .chatbox {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 15px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 800px;
+      height: 700px;
+      display: flex;
+      flex-direction: column;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .chat-header { /* Custom header for title and reset button */
+      background: linear-gradient(45deg, #667eea, #764ba2);
+      color: white;
+      padding: 15px 20px; /* Adjusted padding */
+      text-align: center;
+      border-radius: 15px 15px 0 0;
+      font-size: 1.3em;
+      font-weight: 600;
+      display: flex; /* Use flexbox for alignment */
+      justify-content: space-between; /* Space between title and button */
+      align-items: center;
+    }
+
+    .chat-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      background: #f8f9fa;
+      margin: 0;
+    }
+
+    .chat-body::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .chat-body::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+
+    .chat-body::-webkit-scrollbar-thumb {
+      background: #888;
+      border-radius: 10px;
+    }
+
+    .chat-body::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
+
+    .message {
+      margin-bottom: 15px;
+      animation: fadeIn 0.3s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .user-message {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .bot-message {
+      display: flex;
+      justify-content: flex-start;
+    }
+
+    .message-text {
+      max-width: 80%;
+      padding: 12px 18px;
+      border-radius: 20px;
+      line-height: 1.4;
+      word-wrap: break-word;
+      font-size: 14px;
+    }
+
+    .user-message .message-text {
+      background: linear-gradient(45deg, #667eea, #764ba2);
+      color: white;
+      border-bottom-right-radius: 5px;
+    }
+
+    .bot-message .message-text {
+      background: white;
+      color: #333;
+      border: 1px solid #e0e0e0;
+      border-bottom-left-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .bot-message .message-text strong {
+      color: #667eea;
+    }
+
+    .chat-form {
+      padding: 20px;
+      background: white;
+      border-radius: 0 0 15px 15px;
+    }
+
+    .chat-input-group {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    .message-input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 25px;
+      font-size: 14px;
+      resize: none;
+      min-height: 45px;
+      max-height: 100px;
+      font-family: inherit;
+      transition: border-color 0.3s ease;
+    }
+
+    .message-input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .send-btn {
+      background: linear-gradient(45deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 25px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      min-width: 60px;
+    }
+
+    .send-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .send-btn:active {
+      transform: translateY(0);
+    }
+
+    .reset-btn { /* Adjusted style for button in header */
+      background: #dc3545; /* A distinct red for reset */
+      color: white;
+      border: none;
+      padding: 8px 15px; /* Smaller padding */
+      border-radius: 5px; /* Slightly less rounded */
+      cursor: pointer;
+      font-size: 0.9em;
+      font-weight: 500;
+      transition: background-color 0.3s ease;
+    }
+    
+    .reset-btn:hover {
+      background-color: #c82333;
+      box-shadow: none; /* No shadow on hover */
+      transform: none; /* No transform on hover */
+    }
+
+    .welcome-message {
+      text-align: center;
+      color: #666;
+      font-style: italic;
+      margin-top: 50px;
+    }
+
+    .welcome-message p {
+      margin-bottom: 10px;
+    }
+
+    @media (max-width: 900px) {
+      .chatbox {
+        height: 100vh;
+        max-height: 10vh;
+        border-radius: 0;
+        margin: 0;
+      }
+      
+      .chatbox h2, .chat-header { /* Apply to both if using custom header */
+        border-radius: 0;
+      }
+      
+      .chat-form {
+        border-radius: 0;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="chatbox">
+    <div class="chat-header">
+      <span>💬  RAG Assistant</span>
+      <button type="button" class="reset-btn" id="resetButton">เริ่มใหม่</button>
+    </div>
+
+    <div class="chat-body" id="chat-body">
+      <div class="welcome-message">
+        <p>สวัสดีครับ! ผมคือผู้ช่วยร้านค้าออนไลน์</p>
+        <p>สามารถสอบถามเกี่ยวกับสินค้าได้เลยครับ</p>
+      </div>
+    </div>
+
+    <form id="chatForm" class="chat-form">
+      <div class="chat-input-group">
+        <textarea id="messageInput" class="message-input" placeholder="พิมพ์คำถาม..." required></textarea>
+        <button type="submit" class="send-btn">ส่ง</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    const chatForm = document.getElementById('chatForm');
+    const messageInput = document.getElementById('messageInput');
+    const chatBody = document.getElementById('chat-body'); // Changed from chat-messages
+    const resetButton = document.getElementById('resetButton');
+    const welcomeMessageDiv = document.querySelector('.welcome-message'); // Get the welcome message div
+
+    // Function to load chat history from Local Storage
+    function loadChatHistory() {
+        const historyJson = localStorage.getItem('chat_history');
+        try {
+            return historyJson ? JSON.parse(historyJson) : [];
+        } catch (e) {
+            console.error("Error parsing chat history from Local Storage:", e);
+            return [];
+        }
+    }
+
+    // Function to save chat history to Local Storage
+    function saveChatHistory(history) {
+        localStorage.setItem('chat_history', JSON.stringify(history));
+    }
+
+    // Function to display a message in the chat UI
+    function displayMessage(role, content) {
+        // Remove welcome message if it exists
+        if (welcomeMessageDiv) {
+            welcomeMessageDiv.remove();
+        }
+
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('message', role === 'user' ? 'user-message' : 'bot-message');
+        
+        const messageTextDiv = document.createElement('div');
+        messageTextDiv.classList.add('message-text');
+        messageTextDiv.innerHTML = role === 'assistant' ? `<strong>AI:</strong> ${content}` : content; // Add "AI:" for bot messages
+        
+        messageDiv.appendChild(messageTextDiv);
+        chatBody.appendChild(messageDiv);
+        chatBody.scrollTop = chatBody.scrollHeight; // Scroll to bottom
+    }
+
+    // Initialize chat history from Local Storage and display
+    let chatHistory = loadChatHistory();
+    if (chatHistory.length > 0) {
+        // Remove the static welcome message if there's history to display
+        if (welcomeMessageDiv) {
+            welcomeMessageDiv.remove();
+        }
+        chatHistory.forEach(msg => displayMessage(msg.role, msg.content));
+    } else {
+        // Ensure welcome message is visible if no history
+        if (welcomeMessageDiv) {
+            welcomeMessageDiv.style.display = 'block';
+        }
+    }
+
+    // Handle form submission
+    chatForm.addEventListener('submit', async (e) => {
+        e.preventDefault(); // Prevent default form submission (page reload)
+
+        const userMessage = messageInput.value.trim();
+        if (!userMessage) {
+            return;
+        }
+
+        // Add user message to history and display
+        chatHistory.push({ role: 'user', content: userMessage });
+        displayMessage('user', userMessage);
+        saveChatHistory(chatHistory); // Save updated history
+
+        messageInput.value = ''; // Clear input field
+        messageInput.disabled = true; // Disable input while waiting for AI
+        chatForm.querySelector('button[type="submit"]').disabled = true; // Disable send button
+
+        try {
+            // Send message and current history to backend
+            const response = await fetch('/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: userMessage,
+                    history: chatHistory.slice(-6) // Send last 6 messages for context to LLM
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            const aiResponse = data.response;
+
+            // Add AI response to history and display
+            chatHistory.push({ role: 'assistant', content: aiResponse });
+            // Keep only last 20 messages for memory management (Local Storage side)
+            if (chatHistory.length > 20) {
+                chatHistory = chatHistory.slice(chatHistory.length - 20); // Slice from the end
+            }
+            displayMessage('assistant', aiResponse);
+            saveChatHistory(chatHistory); // Save updated history
+
+        } catch (error) {
+            console.error('Error fetching AI response:', error);
+            displayMessage('assistant', 'ขออภัยครับ เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง');
+        } finally {
+            messageInput.disabled = false; // Re-enable input
+            chatForm.querySelector('button[type="submit"]').disabled = false; // Re-enable send button
+            messageInput.focus(); // Focus input for next message
+        }
+    });
+
+    // Handle reset button click
+    resetButton.addEventListener('click', async () => {
+        // Clear history from Local Storage
+        localStorage.removeItem('chat_history'); 
+        chatHistory = []; // Clear in-memory history
+        chatBody.innerHTML = ''; // Clear UI
+
+        // Re-add the welcome message
+        const newWelcomeMessage = document.createElement('div');
+        newWelcomeMessage.classList.add('welcome-message');
+        newWelcomeMessage.innerHTML = `<p>สวัสดีครับ! ผมคือผู้ช่วยร้านค้าออนไลน์</p><p>สามารถสอบถามเกี่ยวกับสินค้าได้เลยครับ</p>`;
+        chatBody.appendChild(newWelcomeMessage);
+
+        chatBody.scrollTop = chatBody.scrollHeight; // Scroll to bottom
+
+        // Optionally, inform the backend (if reset has any backend implications)
+        try {
+            await fetch('/reset', { method: 'POST' });
+            console.log("Backend reset acknowledged.");
+        } catch (error) {
+            console.error("Error calling backend reset:", error);
+        }
+    });
+
+    // Auto-resize textarea
+    const textarea = document.querySelector('.message-input');
+    textarea.addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+    });
+
+    // Send message with Enter (but allow Shift+Enter for new line)
+    textarea.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        if (this.value.trim()) {
+          this.closest('form').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        }
+      }
+    });
+  </script>
+</body>
+
+</html>
